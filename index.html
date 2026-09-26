@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover — контент заходит под "чёлку" и полосу жестов iPhone,
+       а отступы от них мы сами задаём через env(safe-area-inset-*) в style.css -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Подсказываем браузеру, что у нас есть и светлая, и тёмная тема -->
+  <meta name="color-scheme" content="light dark">
+  <title>Планер</title>
+
+  <!-- ===== PWA: приложение можно установить на экран "Домой" ===== -->
+  <!-- Манифест: название, иконки, цвета и режим "как отдельное приложение" -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Цвет системных панелей браузера — под фон приложения в светлой и тёмной теме -->
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Специально для iPhone (Safari читает эти теги, а не только манифест) -->
+  <!-- Открывать без адресной строки Safari, во весь экран -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- Статус-бар прозрачный, контент заходит под него (отступ задан через safe-area в style.css) -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- Подпись под иконкой на экране "Домой" -->
+  <meta name="apple-mobile-web-app-title" content="Планер">
+  <!-- Иконка на экране "Домой" -->
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <!-- Иконка во вкладке браузера -->
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+
+    <!-- ================= ЭКРАН «СЕГОДНЯ» ================= -->
+    <section class="view" id="view-today">
+      <header class="large-title">
+        <p class="eyebrow" id="today-date">Сегодня</p>
+        <h1>Планер</h1>
+      </header>
+
+      <!-- Главный блок. data-state меняется из app.js, и по нему CSS
+           перекрашивает кольцо: waiting / soon / leave-now / started / no-classes -->
+      <div class="hero" id="hero" data-state="waiting">
+        <div class="ring">
+          <svg class="ring-svg" viewBox="0 0 216 216" aria-hidden="true">
+            <defs>
+              <!-- Градиент "по кругу". В SVG нет кругового (conic) градиента,
+                   поэтому делим кольцо на две половины:
+                   правая — сверху вниз синий → фиолетовый,
+                   левая — снизу вверх фиолетовый → розовый.
+                   Цвета остановок (stop) задаются в CSS, поэтому их можно плавно менять. -->
+              <linearGradient id="grad-right" gradientUnits="userSpaceOnUse" x1="0" y1="14" x2="0" y2="202">
+                <stop offset="0" class="stop-1"/>
+                <stop offset="1" class="stop-2"/>
+              </linearGradient>
+              <linearGradient id="grad-left" gradientUnits="userSpaceOnUse" x1="0" y1="202" x2="0" y2="14">
+                <stop offset="0" class="stop-2"/>
+                <stop offset="1" class="stop-3"/>
+              </linearGradient>
+              <!-- "Краска" для кольца: две половины рядом. Поворот на −7° прячет стык
+                   цветов под скруглённым началом дуги, чтобы старт был чисто синим. -->
+              <pattern id="ring-paint" patternUnits="userSpaceOnUse" width="216" height="216">
+                <g transform="rotate(-7 108 108)">
+                  <rect x="107" y="-30" width="140" height="276" fill="url(#grad-right)"/>
+                  <rect x="-30" y="-30" width="138" height="276" fill="url(#grad-left)"/>
+                </g>
+              </pattern>
+            </defs>
+            <!-- Бледная "дорожка" под кольцом -->
+            <circle class="ring-track" cx="108" cy="108" r="94"/>
+            <!-- Само кольцо прогресса: окружность из двух дуг, начинается сверху (в 12 часов)
+                 и идёт по часовой стрелке. Длину видимой дуги задаёт stroke-dashoffset (см. app.js) -->
+            <!-- pathLength="100" — считаем длину кольца в процентах, так проще -->
+            <path class="ring-progress" id="ring-progress" pathLength="100" d="M108 14 a94 94 0 1 1 0 188 a94 94 0 1 1 0 -188"/>
+          </svg>
+
+          <div class="ring-center">
+            <span class="ring-caption" id="ring-caption">Выйти в</span>
+            <span class="ring-time" id="leave-time">--:--</span>
+            <span class="ring-sub" id="countdown"></span>
+          </div>
+        </div>
+
+        <p class="hero-title" id="hero-title"></p>
+        <p class="hero-subtitle" id="hero-subtitle"></p>
+        <!-- Какая пара и где — показываем, если расписание загружено с сайта МАУ -->
+        <p class="hero-lesson" id="hero-lesson" hidden></p>
+        <!-- У группы есть подгруппы, а своя не выбрана: время выхода считается по самой ранней паре из всех -->
+        <button class="chip hero-hint" id="subgroup-hint" type="button" hidden>Выбери подгруппу — время выхода будет точнее</button>
+      </div>
+
+      <!-- Погода: сегмент-контрол в стиле iOS -->
+      <h2 class="section-title">Погода</h2>
+      <div class="segmented" id="weather-control" role="radiogroup" aria-label="Погода">
+        <!-- Белая "плашка", которая ездит под выбранным вариантом -->
+        <span class="segmented-thumb" aria-hidden="true"></span>
+        <!-- Кнопки добавляет app.js -->
+      </div>
+      <p class="footnote" id="weather-note"></p>
+
+      <!-- Как доехать на транспорте (логика — trip.js) -->
+      <h2 class="section-title">Как доехать</h2>
+      <div class="card trip-card">
+        <div id="trip-body"></div>
+        <div class="trip-actions">
+          <button class="chip" id="trip-here" type="button">📍 От меня сейчас</button>
+          <button class="chip" id="trip-home" type="button" hidden>🏠 От дома</button>
+          <button class="chip chip-quiet" id="trip-save-home" type="button" hidden>Запомнить это место как дом</button>
+        </div>
+        <p class="trip-note" id="trip-note">По расписанию перевозчика — не в реальном времени</p>
+      </div>
+
+      <!-- Маршрут: горизонтальный степпер -->
+      <h2 class="section-title" id="route-title">Маршрут</h2>
+      <div class="card route-card" id="route-card">
+        <p class="route-dest" id="route-dest" hidden></p>
+        <ol class="stepper" id="stepper"><!-- заполняет app.js --></ol>
+        <div class="route-total">
+          <span class="route-total-label" id="route-formula"></span>
+          <span class="route-total-value" id="route-total"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ЭКРАН «РАСПИСАНИЕ» ================= -->
+    <!-- Полное расписание на неделю: моя группа, любая другая группа или преподаватель (логика — browse.js) -->
+    <section class="view" id="view-schedule" hidden>
+      <header class="large-title">
+        <p class="eyebrow" id="browse-kind">Моя группа</p>
+        <h1 id="browse-title">Расписание</h1>
+        <p class="browse-sub" id="browse-sub"></p>
+      </header>
+
+      <!-- Поиск группы или преподавателя -->
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <input id="browse-search" type="search" placeholder="Группа или преподаватель" autocomplete="off" spellcheck="false" enterkeyhint="search">
+      </label>
+      <div id="browse-results" hidden></div>
+      <p class="footnote" id="browse-note" hidden></p>
+
+      <!-- Переключатель недель -->
+      <div class="week-switch">
+        <button class="week-arrow" id="week-prev" type="button" aria-label="Предыдущая неделя">‹</button>
+        <div class="week-label">
+          <span class="week-range" id="week-range"></span>
+          <span class="week-kind" id="week-kind"></span>
+        </div>
+        <button class="week-arrow" id="week-next" type="button" aria-label="Следующая неделя">›</button>
+      </div>
+      <div class="browse-chips">
+        <button class="chip" id="browse-today" type="button" hidden>К текущей неделе</button>
+        <button class="chip" id="browse-mine" type="button" hidden>Моя группа</button>
+      </div>
+
+      <!-- Переключатель подгрупп: «Все · 1 · 2» (заполняет browse.js, если у группы есть подгруппы) -->
+      <div class="segmented browse-subgroups" id="browse-subgroups" role="radiogroup" aria-label="Подгруппа" hidden></div>
+
+      <div id="browse-days" aria-live="polite"></div>
+    </section>
+
+    <!-- ================= ЭКРАН «НАСТРОЙКИ» ================= -->
+    <section class="view" id="view-settings" hidden>
+      <header class="large-title">
+        <h1>Настройки</h1>
+      </header>
+
+      <!-- Откуда брать расписание: с сайта МАУ или введённое вручную -->
+      <h2 class="group-header">Расписание</h2>
+      <div class="segmented" id="source-control" role="radiogroup" aria-label="Источник расписания" style="--count: 2">
+        <span class="segmented-thumb" aria-hidden="true"></span>
+        <button class="segment" type="button" role="radio" data-source="group">Группа МАУ</button>
+        <button class="segment" type="button" role="radio" data-source="manual">Вручную</button>
+      </div>
+
+      <!-- ===== Режим "Группа МАУ" ===== -->
+      <div id="group-settings">
+        <!-- Inset grouped list: заголовок секции + карточка со строками + сноска -->
+        <h2 class="group-header">Группа</h2>
+        <ul class="group">
+          <!-- Обычные <select>: на iPhone они открывают удобное колесо выбора -->
+          <li class="row no-icon">
+            <span class="row-label">Институт</span>
+            <select class="row-select" id="fac-select" aria-label="Институт"></select>
+          </li>
+          <li class="row no-icon">
+            <span class="row-label">Курс</span>
+            <select class="row-select" id="course-select" aria-label="Курс"></select>
+          </li>
+          <li class="row no-icon">
+            <span class="row-label">Группа</span>
+            <select class="row-select" id="group-select" aria-label="Группа"></select>
+          </li>
+          <!-- Появляется, если у группы есть подгруппы (сайт МАУ показывает их только у преподавателей) -->
+          <li class="row no-icon" id="subgroup-row" hidden>
+            <span class="row-label">Подгруппа</span>
+            <select class="row-select" id="subgroup-select" aria-label="Подгруппа"></select>
+          </li>
+          <li class="row no-icon">
+            <button class="row-button" id="refresh-button" type="button">Проверить обновления</button>
+          </li>
+        </ul>
+        <p class="group-footer" id="sync-status"></p>
+
+        <!-- Свой сервер: сам обновляет расписание, а кнопкой можно обновить немедленно -->
+        <h2 class="group-header">Сервер</h2>
+        <ul class="group">
+          <li class="row no-icon">
+            <span class="row-label">Адрес</span>
+            <input class="row-text" id="server-url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+                   placeholder="не подключён">
+          </li>
+          <li class="row no-icon">
+            <span class="row-label">Токен</span>
+            <input class="row-text" id="server-token" type="password" autocomplete="off" spellcheck="false"
+                   placeholder="для кнопки ниже">
+          </li>
+          <li class="row no-icon">
+            <button class="row-button" id="admin-refresh" type="button">Обновить расписание сейчас</button>
+          </li>
+        </ul>
+        <p class="group-footer" id="server-status">Без сервера расписание обновляет компьютер. Токен нужен только тебе — для кнопки «Обновить сейчас».</p>
+
+        <!-- Push-уведомления об изменениях расписания (логика — notify.js) -->
+        <h2 class="group-header">Уведомления</h2>
+        <ul class="group">
+          <li class="row no-icon">
+            <button class="row-button" id="push-toggle" type="button">Включить уведомления об изменениях</button>
+          </li>
+          <li class="row no-icon" id="push-test-row" hidden>
+            <button class="row-button" id="push-test" type="button">Отправить пробное уведомление</button>
+          </li>
+          <!-- Без сервера: код подписки нужно один раз перенести на компьютер -->
+          <li class="row no-icon" id="push-code-row" hidden>
+            <textarea class="paste-box" id="push-code" rows="3" readonly></textarea>
+          </li>
+          <li class="row no-icon" id="push-copy-row" hidden>
+            <button class="row-button" id="push-copy" type="button">Скопировать код</button>
+          </li>
+        </ul>
+        <p class="group-footer" id="push-status" style="white-space: pre-line"></p>
+
+        <!-- Запасной путь: скопировать страницу расписания с сайта МАУ и вставить сюда -->
+        <h2 class="group-header">Вставить вручную</h2>
+        <ul class="group">
+          <li class="row no-icon">
+            <a class="row-button" id="mau-link" href="#" target="_blank" rel="noopener">Расписание на сайте МАУ ↗</a>
+          </li>
+          <li class="row no-icon" id="mau-link-next-row" hidden>
+            <a class="row-button" id="mau-link-next" href="#" target="_blank" rel="noopener">Следующая неделя ↗</a>
+          </li>
+          <li class="row no-icon">
+            <textarea class="paste-box" id="paste-box" rows="2"
+                      placeholder="Нажми и вставь сюда скопированное расписание"></textarea>
+          </li>
+        </ul>
+        <p class="group-footer" id="paste-status">На странице МАУ нажми и удерживай текст → «Выбрать все» → «Скопировать». Вернись сюда и вставь в поле выше.</p>
+
+        <div id="recent-block" hidden>
+          <h2 class="group-header">Недавние группы</h2>
+          <ul class="group" id="recent-groups"></ul>
+        </div>
+
+        <h2 class="group-header">Предметы</h2>
+        <ul class="group" id="subjects"></ul>
+        <p class="group-footer">Выключенный предмет не считается первой парой. Например, если не ходишь на факультатив, время выхода посчитается от следующей пары.</p>
+
+        <h2 class="group-header">Корпуса</h2>
+        <ul class="group" id="buildings"></ul>
+        <p class="group-footer">🚌 — минут в автобусе, 🚶 — от остановки до корпуса. Пустое поле — как в разделе «Маршрут».</p>
+      </div>
+
+      <!-- ===== Режим "Вручную" ===== -->
+      <div id="manual-settings">
+        <h2 class="group-header">Первая пара</h2>
+        <ul class="group" id="schedule"><!-- строки дней добавляет app.js --></ul>
+        <p class="group-footer">Выключи день, если пар нет.</p>
+      </div>
+
+      <h2 class="group-header">Маршрут</h2>
+      <ul class="group">
+        <li class="row">
+          <span class="row-icon" style="--tint: var(--teal)">🚎</span>
+          <span class="row-label">По расписанию транспорта</span>
+          <input class="switch" id="use-transport" type="checkbox" aria-label="Считать время выхода по расписанию транспорта">
+        </li>
+        <li class="row">
+          <span class="row-icon" style="--tint: var(--blue)">🚶</span>
+          <span class="row-label">Дом → остановка</span>
+          <label class="row-value"><input type="number" inputmode="numeric" min="0" data-setting="route.toStop"><span>мин</span></label>
+        </li>
+        <li class="row">
+          <span class="row-icon" style="--tint: var(--orange)">⏱</span>
+          <span class="row-label">Ожидание автобуса</span>
+          <label class="row-value"><input type="number" inputmode="numeric" min="0" data-setting="route.wait"><span>мин</span></label>
+        </li>
+        <li class="row">
+          <span class="row-icon" style="--tint: var(--green)">🚌</span>
+          <span class="row-label">В автобусе</span>
+          <label class="row-value"><input type="number" inputmode="numeric" min="0" data-setting="route.bus"><span>мин</span></label>
+        </li>
+        <li class="row">
+          <span class="row-icon" style="--tint: var(--purple)">🎓</span>
+          <span class="row-label">Остановка → универ</span>
+          <label class="row-value"><input type="number" inputmode="numeric" min="0" data-setting="route.fromStop"><span>мин</span></label>
+        </li>
+      </ul>
+
+      <p class="group-footer">Если построен маршрут на транспорте («Как доехать» на главном экране), время выхода берётся из него — по расписанию автобусов и троллейбусов. Минуты ниже используются, когда такого маршрута нет.</p>
+
+      <h2 class="group-header">Запас</h2>
+      <ul class="group">
+        <li class="row">
+          <span class="row-icon" style="--tint: var(--pink)">🛟</span>
+          <span class="row-label">Про запас</span>
+          <label class="row-value"><input type="number" inputmode="numeric" min="0" data-setting="buffer"><span>мин</span></label>
+        </li>
+      </ul>
+
+      <h2 class="group-header">Добавка на погоду</h2>
+      <ul class="group" id="weather-extras"><!-- заполняет app.js --></ul>
+      <p class="group-footer">Время выхода = начало пары − (дорога + запас + погода).</p>
+
+      <!-- О приложении: чтобы никто не принял его за официальное приложение университета -->
+      <p class="group-footer" style="text-align: center; margin-top: 32px">Планер — неофициальное приложение для студентов МАУ.<br>Расписание берётся с открытого сайта mauniver.ru.</p>
+    </section>
+  </main>
+
+  <!-- ================= НИЖНИЙ ТАБ-БАР ================= -->
+  <nav class="tabbar" aria-label="Разделы">
+    <button class="tab is-active" data-view="view-today">
+      <!-- Иконка-кольцо -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <span>Сегодня</span>
+    </button>
+    <button class="tab" data-view="view-schedule">
+      <!-- Иконка-календарь -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <span>Расписание</span>
+    </button>
+    <button class="tab" data-view="view-settings">
+      <!-- Иконка-ползунки -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="17" r="2.3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Настройки</span>
+    </button>
+  </nav>
+
+  <!-- mau.js — разбор страниц сайта МАУ; data.js — загрузка и хранение расписания;
+       app.js — расчёт и интерфейс -->
+  <script src="mau.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  <script src="browse.js"></script>
+  <script src="plan.js"></script>
+  <script src="trip.js"></script>
+  <script src="notify.js"></script>
+</body>
+</html>

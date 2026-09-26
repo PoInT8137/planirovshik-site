@@ -1,0 +1,888 @@
+/* =====================================================================
+   Планер — стили в духе iOS
+   Все цвета — в переменных (:root), тёмная тема просто переопределяет их.
+   ===================================================================== */
+
+/* ---------- 1. Переменные: светлая тема (по умолчанию) ---------- */
+:root {
+  /* Системные цвета iOS */
+  --blue:   #0A84FF;
+  --purple: #BF5AF2;
+  --pink:   #FF375F;
+  --orange: #FF9F0A;
+  --green:  #30D158;
+  --red:    #FF453A;
+  --teal:   #64D2FF;
+
+  /* Фоны и текст */
+  --bg:          #F2F2F7;            /* светло-серый фон Apple */
+  --surface:     #FFFFFF;            /* карточки */
+  --fill:        rgba(118,118,128,.12); /* подложка сегмент-контрола, дорожка кольца */
+  --separator:   rgba(60,60,67,.18); /* тонкие линии между строками */
+  --label:       #000000;
+  --label-2:     rgba(60,60,67,.60); /* второстепенный текст */
+  --label-3:     rgba(60,60,67,.35);
+  --thumb:       #FFFFFF;            /* плашка выбранного сегмента */
+
+  /* Многослойная тень: тонкая вблизи + широкая мягкая издалека.
+     Так объект выглядит "парящим", а не приклеенным серым пятном. */
+  --shadow-card:
+    0 0.5px 1px rgba(0,0,0,.04),
+    0 2px 6px rgba(0,0,0,.04),
+    0 12px 32px rgba(0,0,0,.06);
+  --shadow-thumb:
+    0 0.5px 1px rgba(0,0,0,.08),
+    0 3px 8px rgba(0,0,0,.12);
+
+  --radius-card: 24px;
+  --radius-group: 20px;
+
+  /* Системный шрифт — тот же, что на самом iPhone */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+
+  color-scheme: light dark;
+}
+
+/* ---------- 2. Тёмная тема: OLED-чёрный как в iOS ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #000000;
+    --surface:   #1C1C1E;
+    --fill:      rgba(118,118,128,.24);
+    --separator: rgba(84,84,88,.6);
+    --label:     #FFFFFF;
+    --label-2:   rgba(235,235,245,.60);
+    --label-3:   rgba(235,235,245,.30);
+    --thumb:     #636366;
+    /* На чёрном фоне тени не видны — iOS в тёмной теме их почти не использует */
+    --shadow-card: none;
+    --shadow-thumb: 0 3px 8px rgba(0,0,0,.4);
+  }
+}
+
+/* ---------- 3. Основа страницы ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }  /* iOS не будет сам увеличивать шрифт при повороте */
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font);
+  font-size: 17px;                        /* базовый размер текста в iOS */
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent; /* убираем серую вспышку при тапе на iPhone */
+}
+
+/* Колонка контента: на телефоне во всю ширину, на десктопе — по центру, как телефон */
+.app {
+  max-width: 440px;
+  margin: 0 auto;
+  /* Отступы с учётом выреза iPhone (safe-area) и места под таб-бар снизу */
+  padding:
+    calc(env(safe-area-inset-top) + 12px)
+    calc(env(safe-area-inset-right) + 16px)
+    calc(env(safe-area-inset-bottom) + 96px)
+    calc(env(safe-area-inset-left) + 16px);
+}
+
+/* Атрибут hidden должен побеждать любые наши display */
+[hidden] { display: none !important; }
+
+/* Плавное появление экрана при переключении вкладок */
+.view { animation: view-in .35s ease both; }
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 4. Большой заголовок (Large Title из iOS) ---------- */
+.large-title { padding: 8px 4px 4px; }
+.large-title h1 {
+  margin: 0;
+  font-size: min(34px, 8.6vw);          /* длинный заголовок — в одну строку и на узких экранах */
+  font-weight: 700;
+  letter-spacing: -0.02em;              /* крупный SF-текст в iOS чуть поджат */
+}
+.eyebrow {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--label-2);
+}
+
+.section-title {
+  margin: 28px 4px 10px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.footnote {
+  margin: 8px 4px 0;
+  font-size: 13px;
+  color: var(--label-2);
+}
+
+/* ---------- 5. Главный блок с кольцом ---------- */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 4px;
+  text-align: center;
+}
+
+.ring {
+  position: relative;
+  width: 216px;
+  height: 216px;
+}
+
+.ring-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ring-track,
+.ring-progress {
+  fill: none;
+  stroke-width: 22;
+}
+.ring-track { stroke: var(--fill); }
+
+.ring-progress {
+  stroke: url(#ring-paint);             /* градиент "по кругу" из index.html */
+  stroke-linecap: round;                /* скруглённые концы, как у колец Apple Watch */
+  /* Пунктир длиной во всё кольцо (100, см. pathLength в index.html), сдвинутый на 100 = кольцо пустое.
+     Задаём это в CSS, чтобы до запуска app.js кольцо не мелькнуло полным. */
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  /* "Таяние": плавно анимируем длину дуги при каждом пересчёте */
+  transition: stroke-dashoffset 1.2s cubic-bezier(.22,.8,.3,1), opacity .4s ease;
+}
+
+/* Цвета градиента по состояниям. transition даёт плавное перекрашивание. */
+.ring-svg stop { transition: stop-color 1s ease; }
+.stop-1 { stop-color: var(--blue); }
+.stop-2 { stop-color: var(--purple); }
+.stop-3 { stop-color: var(--pink); }
+
+/* Осталось ≤ 10 минут — кольцо "теплеет" */
+.hero[data-state="soon"] .stop-1 { stop-color: var(--pink); }
+.hero[data-state="soon"] .stop-2 { stop-color: var(--orange); }
+.hero[data-state="soon"] .stop-3 { stop-color: var(--orange); }
+
+/* Пора выходить — оранжево-красное */
+.hero[data-state="leave-now"] .stop-1 { stop-color: var(--orange); }
+.hero[data-state="leave-now"] .stop-2 { stop-color: var(--red); }
+.hero[data-state="leave-now"] .stop-3 { stop-color: var(--red); }
+
+/* Пар нет — спокойное зелёное кольцо */
+.hero[data-state="no-classes"] .stop-1 { stop-color: var(--green); }
+.hero[data-state="no-classes"] .stop-2 { stop-color: var(--teal); }
+.hero[data-state="no-classes"] .stop-3 { stop-color: var(--teal); }
+
+/* План на завтра — то же кольцо, но приглушённое: выходить сегодня не нужно */
+.hero[data-state="tomorrow"] .ring-progress { opacity: .45; }
+
+/* Пара идёт или нет данных — нейтрально: остаётся только серая дорожка */
+.hero[data-state="started"] .ring-progress,
+.hero[data-state="no-data"] .ring-progress { opacity: 0; }
+
+/* Текст в центре кольца */
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ring-caption {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--label-2);
+}
+.ring-time {
+  font-size: 54px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;   /* цифры одной ширины — время не "прыгает" */
+  line-height: 1.05;
+}
+.ring-sub {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-title {
+  margin: 18px 0 2px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.hero-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: var(--label-2);
+}
+
+/* Какая пара и где: небольшая "капсула" под заголовком */
+.hero-hint { display: block; margin: 10px auto 0; font-size: 13px; }
+.hero-lesson {
+  margin: 12px 0 0;
+  padding: 6px 14px;
+  max-width: 100%;
+  border-radius: 14px;                  /* текст может переноситься на 2 строки — поэтому не "таблетка" */
+  background: var(--fill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-2);
+}
+
+/* Состояние "пора выходить!" — красный заголовок и лёгкая пульсация кольца */
+.hero[data-state="leave-now"] .hero-title { color: var(--red); font-weight: 700; }
+.hero[data-state="leave-now"] .ring-sub   { color: var(--red); font-weight: 600; }
+.hero[data-state="leave-now"] .ring       { animation: pulse 1.8s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(255,69,58,0)); }
+  50%      { transform: scale(1.03); filter: drop-shadow(0 0 18px rgba(255,69,58,.45)); }
+}
+
+/* Если человек отключил анимации в системе — уважаем это */
+@media (prefers-reduced-motion: reduce) {
+  .hero[data-state="leave-now"] .ring,
+  .view { animation: none; }
+  .ring-progress, .segmented-thumb { transition: none; }
+}
+
+/* ---------- 6. Сегмент-контрол погоды ---------- */
+.segmented {
+  position: relative;
+  display: grid;
+  /* Число колонок задаётся переменной --count (погода — 5, источник расписания — 2) */
+  grid-template-columns: repeat(var(--count, 5), 1fr);
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+
+/* Белая плашка: ширина = одна колонка, сдвиг задаёт app.js через --index */
+.segmented-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--count, 5));
+  border-radius: 11px;
+  background: var(--thumb);
+  box-shadow: var(--shadow-thumb);
+  transform: translateX(calc(var(--index, 0) * 100%));
+  transition: transform .35s cubic-bezier(.3,.9,.3,1);
+}
+
+.segment {
+  position: relative;                   /* поверх плашки */
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 7px;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color .2s;
+}
+.segment-emoji { font-size: 20px; line-height: 1; }
+#source-control .segment { font-size: 14px; padding: 7px 0; }
+.segment[aria-checked="true"] { color: var(--label); font-weight: 600; }
+
+/* ---------- 7. Карточка маршрута и степпер ---------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.route-card { padding: 22px 16px 16px; }
+
+/* "До корпуса: Ленина, 57" над степпером */
+.route-dest {
+  margin: -6px 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-2);
+}
+
+.stepper {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0 0 26px;                    /* место под подписи узлов */
+  list-style: none;
+}
+
+/* Узел — кружок с иконкой */
+.step {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 16px;
+  /* Полупрозрачная заливка цветом узла: color-mix смешивает цвет с прозрачностью */
+  background: color-mix(in srgb, var(--tint) 18%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tint) 35%, transparent);
+}
+/* Подпись под узлом */
+.step-label {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label-2);
+  white-space: nowrap;
+}
+
+/* Соединительная линия между узлами, над ней — минуты участка */
+.link {
+  flex: 1;
+  position: relative;
+  height: 34px;
+}
+.link::before {                          /* сама тонкая линия */
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--separator);
+}
+.link-minutes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;                  /* "25 мин" всегда в одну строку */
+  margin: 0 -6px;                       /* чуть шире связи — подпись может заходить на края кружков */
+}
+
+.route-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--separator);
+}
+.route-total-label {
+  font-size: 13px;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+.route-total-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- 8. Настройки: inset grouped list как в «Настройках» iOS ---------- */
+.group-header {
+  margin: 28px 20px 7px;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;            /* заголовки секций КАПСОМ */
+  letter-spacing: .01em;
+  color: var(--label-2);
+}
+.group-footer {
+  margin: 7px 20px 0;
+  font-size: 13px;
+  color: var(--label-2);
+  white-space: pre-line;                /* "\n" в тексте — перенос строки */
+}
+
+.group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border-radius: var(--radius-group);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;                     /* скругление обрезает содержимое строк */
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 16px;
+}
+/* Разделитель — тонкая линия, начинается после иконки (как в iOS), у последней строки его нет */
+.row + .row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 58px;
+  height: 0.5px;
+  background: var(--separator);
+}
+.row.no-icon + .row.no-icon::before { left: 16px; }
+
+/* Цветной квадратик с иконкой слева */
+.row-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--tint);
+}
+
+.row-label { flex: 1; }
+
+/* Значение справа: поле ввода + единица измерения */
+.row-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--label-2);
+  font-size: 17px;
+}
+.row-value input {
+  width: 3.2ch;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-variant-numeric: tabular-nums;   /* моноширинные цифры */
+  text-align: right;
+  outline: none;
+  -moz-appearance: textfield;           /* убираем стрелки у type=number */
+}
+.row-value input::-webkit-outer-spin-button,
+.row-value input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.row-value input:focus { color: var(--blue); }
+
+/* Поле времени в строке дня */
+.time-input {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--label);
+  font: inherit;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  min-width: 76px;
+  text-align: center;
+}
+.time-input:disabled { opacity: .35; }
+.day-off { color: var(--label-3); font-size: 15px; }
+
+/* Переключатель iOS (зелёный тумблер) на основе обычного чекбокса */
+.switch {
+  flex: none;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 16px;
+  background: var(--fill);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background .25s;
+}
+.switch::after {                         /* белый кружок */
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.08);
+  transition: transform .25s cubic-bezier(.3,.9,.3,1);
+}
+.switch:checked { background: var(--green); }
+.switch:checked::after { transform: translateX(20px); }
+
+/* Выпадающий список в строке (институт, курс, группа): выглядит как серое значение справа,
+   но растянут на всю строку — открывается от касания в любом месте строки, как в настройках iPhone
+   (раньше срабатывал только тап точно по тексту справа, и казалось, что выбор "не нажимается") */
+.row-select {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 0 34px 0 38%;               /* слева — место под подпись строки, справа — под стрелку "›" */
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  text-align: right;
+  text-align-last: right;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.row-select option { color: initial; }   /* пункты списка — обычным цветом */
+.row-select:disabled { opacity: .5; }
+/* Стрелочка "›" справа, как у строк в настройках iOS */
+.row:has(.row-select)::after {
+  content: "›";
+  position: absolute;
+  right: 16px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--label-3);
+  pointer-events: none;
+}
+
+/* Строка-кнопка ("Обновить расписание") — синим текстом во всю ширину */
+.row-button {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.row-button:disabled { color: var(--label-3); cursor: default; }
+
+/* Название предмета может быть длинным — переносим, а не обрезаем */
+.row-label.wrap { font-size: 15px; line-height: 1.25; padding: 4px 0; }
+
+/* Метка "фак." у факультатива */
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* Недавние группы: название и направление в две строки */
+.row-sub { display: block; font-size: 12px; color: var(--label-2); }
+.row.is-current .row-check { color: var(--blue); }
+.row-check { color: transparent; font-weight: 600; }
+.row.clickable { cursor: pointer; }
+
+/* Маленькие поля минут в строке корпуса */
+.mini {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+}
+.mini input {
+  width: 3ch;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--fill);
+  color: var(--label);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.mini input::-webkit-outer-spin-button,
+.mini input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mini input::placeholder { color: var(--label-3); }
+
+.empty-row { color: var(--label-2); font-size: 15px; }
+
+/* Текстовое поле в строке (адрес сервера, токен) — справа, серым, как значения в настройках iOS */
+.row-text {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  text-align: right;
+  outline: none;
+}
+.row-text:focus { color: var(--label); }
+.row-text::placeholder { color: var(--label-3); }
+
+/* Поле для вставки расписания */
+.paste-box {
+  flex: 1;
+  margin: 4px 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--label);
+  font: inherit;
+  font-size: 15px;
+  resize: none;
+}
+.paste-box::placeholder { color: var(--label-2); }
+a.row-button { text-decoration: none; }
+.group-footer.is-ok { color: var(--green); }
+.group-footer.is-error { color: var(--red); }
+
+/* ---------- 7½. Карточка «Как доехать» ---------- */
+
+.trip-card { padding: 18px 16px 14px; }
+.trip-hint { margin: 0 0 12px; color: var(--label-2); font-size: 15px; }
+.trip-hint.is-error { color: var(--red); }
+.trip-late {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--label);
+  font-size: 14px;
+}
+.trip-head { display: flex; flex-direction: column; margin-bottom: 10px; }
+.trip-leave { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.trip-arrive { font-size: 14px; color: var(--label-2); }
+
+.trip-steps { margin: 0 0 6px; padding: 0; list-style: none; }
+.trip-step {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 15px;
+  line-height: 1.3;
+}
+/* Тонкая вертикальная линия между шагами — как у маршрута в Картах */
+.trip-step + .trip-step::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: -8px;
+  height: 14px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--separator);
+}
+.trip-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--fill);
+  font-size: 15px;
+}
+.trip-sub { display: block; font-size: 12px; color: var(--label-2); }
+.trip-alt-title { margin: 10px 0 2px; font-size: 13px; font-weight: 600; color: var(--label-2); text-transform: uppercase; letter-spacing: .02em; }
+.trip-alt { margin: 2px 0; font-size: 14px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+.trip-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.trip-actions .chip { margin: 0; }
+.chip-quiet { background: var(--fill); color: var(--label-2); }
+.trip-note { margin: 10px 0 0; font-size: 12px; color: var(--label-2); }
+
+/* ---------- 8½. Вкладка «Расписание» ---------- */
+
+.browse-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--label-2);
+  white-space: pre-line;
+  /* Направление подготовки бывает очень длинным — не больше трёх строк */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Строка поиска как в iOS: серая капсула с лупой */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0 10px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--label-2);
+}
+.search svg { width: 18px; height: 18px; flex: none; }
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--label);
+  font: inherit;
+  outline: none;
+  -webkit-appearance: none;
+}
+.search input::placeholder { color: var(--label-2); }
+.search input:disabled::placeholder { color: var(--label-3); }
+
+/* Переключатель недель: стрелки и подпись посередине */
+.week-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 6px;
+}
+.week-arrow {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--blue);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.week-arrow:disabled { color: var(--label-3); box-shadow: none; background: var(--fill); cursor: default; }
+.week-label { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.week-range { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.week-kind { font-size: 13px; color: var(--label-2); }
+
+.browse-chips { display: flex; justify-content: center; gap: 8px; min-height: 8px; }
+.chip {
+  margin: 4px 0 10px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Карточка дня */
+.day-card {
+  margin: 12px 0;
+  padding: 14px 16px 6px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.day-card.is-past { opacity: .55; }                           /* прошедшие дни — приглушённо */
+.day-card.is-today { box-shadow: var(--shadow-card), inset 0 0 0 2px color-mix(in srgb, var(--blue) 55%, transparent); }
+.day-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.badge-today { background: color-mix(in srgb, var(--blue) 16%, transparent); color: var(--blue); }
+.badge-sub { background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green); }   /* пара подгруппы */
+
+/* Переключатель подгрупп «Все · 1 п/г · 2 п/г» над днями недели */
+.browse-subgroups { margin: 0 0 12px; }
+.browse-subgroups .segment { padding: 7px 0; font-size: 14px; font-weight: 500; }
+
+.lessons { margin: 0; padding: 0; list-style: none; }
+.lesson {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+}
+.lesson + .lesson { border-top: 0.5px solid var(--separator); }
+.lesson-none { color: var(--label-2); font-size: 15px; }
+.lesson-time {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 46px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-time span + span { font-weight: 400; color: var(--label-2); font-size: 13px; }
+.lesson-body { flex: 1; min-width: 0; }
+.lesson-subject { font-size: 16px; font-weight: 600; line-height: 1.25; }
+.lesson-meta { margin-top: 2px; font-size: 13px; color: var(--label-2); }
+.lesson.is-excluded .lesson-subject,
+.lesson.is-excluded .lesson-time { color: var(--label-3); }
+
+.browse-empty { margin: 24px 4px; text-align: center; color: var(--label-2); }
+
+/* ---------- 9. Нижний таб-бар ---------- */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 28px;                            /* три вкладки должны помещаться и на узком экране */
+  padding: 7px 16px calc(env(safe-area-inset-bottom) + 7px);
+  /* "Матовое стекло" как в iOS: полупрозрачный фон + размытие того, что под ним */
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--separator);
+}
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+  padding: 2px 8px;
+  border: 0;
+  background: none;
+  color: var(--label-3);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tab svg { width: 26px; height: 26px; }
+.tab.is-active { color: var(--blue); }
