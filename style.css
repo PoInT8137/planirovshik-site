@@ -1,0 +1,1325 @@
+/* =====================================================================
+   МАУ Расписание — стили в духе iOS
+   Все цвета — в переменных (:root), тёмная тема просто переопределяет их.
+   ===================================================================== */
+
+/* ---------- 1. Переменные: светлая тема (по умолчанию) ---------- */
+:root {
+  /* Системные цвета iOS */
+  --blue:   #0A84FF;
+  --purple: #BF5AF2;
+  --pink:   #FF375F;
+  --orange: #FF9F0A;
+  --green:  #30D158;
+  --red:    #FF453A;
+  --teal:   #64D2FF;
+
+  /* Фоны и текст */
+  --bg:          #F2F2F7;            /* светло-серый фон Apple */
+  --surface:     #FFFFFF;            /* карточки */
+  --fill:        rgba(118,118,128,.12); /* подложка сегмент-контрола, дорожка кольца */
+  --separator:   rgba(60,60,67,.18); /* тонкие линии между строками */
+  --label:       #000000;
+  --label-2:     rgba(60,60,67,.60); /* второстепенный текст */
+  --label-3:     rgba(60,60,67,.35);
+  --thumb:       #FFFFFF;            /* плашка выбранного сегмента */
+  --orange-text: #B25000;            /* текст на оранжевой плашке */
+  --green-text:  #248A3D;
+  --red-text:    #D70015;
+
+  /* Многослойная тень: тонкая вблизи + широкая мягкая издалека.
+     Так объект выглядит "парящим", а не приклеенным серым пятном. */
+  --shadow-card:
+    0 0.5px 1px rgba(0,0,0,.04),
+    0 2px 6px rgba(0,0,0,.04),
+    0 12px 32px rgba(0,0,0,.06);
+  --shadow-thumb:
+    0 0.5px 1px rgba(0,0,0,.08),
+    0 3px 8px rgba(0,0,0,.12);
+
+  --radius-card: 24px;
+  --radius-group: 20px;
+
+  /* Системный шрифт — тот же, что на самом iPhone */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+
+  color-scheme: light dark;
+}
+
+/* ---------- 2. Тёмная тема: OLED-чёрный как в iOS ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #000000;
+    --surface:   #1C1C1E;
+    --fill:      rgba(118,118,128,.24);
+    --separator: rgba(84,84,88,.6);
+    --label:     #FFFFFF;
+    --label-2:   rgba(235,235,245,.60);
+    --label-3:   rgba(235,235,245,.30);
+    --thumb:     #636366;
+    --orange-text: #FFB340;
+    --green-text:  #30D158;
+    --red-text:    #FF6961;
+    /* На чёрном фоне тени не видны — iOS в тёмной теме их почти не использует */
+    --shadow-card: none;
+    --shadow-thumb: 0 3px 8px rgba(0,0,0,.4);
+  }
+}
+
+/* ---------- 3. Основа страницы ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }  /* iOS не будет сам увеличивать шрифт при повороте */
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font);
+  font-size: 17px;                        /* базовый размер текста в iOS */
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent; /* убираем серую вспышку при тапе на iPhone */
+}
+
+/* Колонка контента: на телефоне во всю ширину, на десктопе — по центру, как телефон */
+.app {
+  max-width: 440px;
+  margin: 0 auto;
+  /* Отступы с учётом выреза iPhone (safe-area) и места под таб-бар снизу */
+  padding:
+    calc(env(safe-area-inset-top) + 12px)
+    calc(env(safe-area-inset-right) + 16px)
+    calc(env(safe-area-inset-bottom) + 96px)
+    calc(env(safe-area-inset-left) + 16px);
+}
+
+/* Атрибут hidden должен побеждать любые наши display */
+[hidden] { display: none !important; }
+
+/* Плавное появление экрана при переключении вкладок */
+.view { animation: view-in .35s ease both; }
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 4. Большой заголовок (Large Title из iOS) ---------- */
+.large-title { padding: 8px 4px 4px; }
+/* На главном экране справа от заголовка — "таблетка" с группой */
+.today-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.group-chip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  max-width: 60%;
+  padding: 0 12px 0 14px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--label);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.group-chip > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-chip-sub {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green-text);
+  font-size: 11px;
+}
+.large-title h1 {
+  margin: 0;
+  font-size: min(34px, 8.6vw);          /* длинный заголовок — в одну строку и на узких экранах */
+  font-weight: 700;
+  letter-spacing: -0.02em;              /* крупный SF-текст в iOS чуть поджат */
+}
+.eyebrow {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--label-2);
+}
+
+.section-title {
+  margin: 28px 4px 10px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.footnote {
+  margin: 8px 4px 0;
+  font-size: 13px;
+  color: var(--label-2);
+}
+
+/* ---------- 5. Главный блок с кольцом ---------- */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 14px;
+  padding: 26px 20px 20px;
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.ring {
+  position: relative;
+  width: 216px;
+  height: 216px;
+}
+
+.ring-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ring-track,
+.ring-progress {
+  fill: none;
+  stroke-width: 16;
+}
+.ring-track { stroke: var(--fill); }
+
+.ring-progress {
+  stroke-linecap: round;                /* скруглённые концы, как у колец Apple Watch */
+  /* Пунктир длиной во всё кольцо (100, см. pathLength в index.html), сдвинутый на 100 = кольцо пустое.
+     Задаём это в CSS, чтобы до запуска app.js кольцо не мелькнуло полным. */
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  /* "Таяние": плавно анимируем длину дуги при каждом пересчёте */
+  transition: stroke-dashoffset 1.2s cubic-bezier(.22,.8,.3,1), opacity .4s ease;
+}
+
+/* Кольцо одного цвета: синее, а когда пора выходить — красное. transition — плавное перекрашивание. */
+.ring-progress { stroke: var(--ring-color, var(--blue)); }
+.hero { --ring-color: var(--blue); }
+.hero[data-state="leave-now"] { --ring-color: var(--red); }
+.ring-progress { transition: stroke-dashoffset 1.2s cubic-bezier(.22,.8,.3,1), opacity .4s ease, stroke .6s ease; }
+/* Идёт пара или перерыв — подпись под числом выделена */
+.hero[data-state="in-class"] .ring-sub,
+.hero[data-state="break"] .ring-sub { color: var(--blue); font-weight: 600; }
+
+/* План на завтра — то же кольцо, но приглушённое: выходить сегодня не нужно */
+.hero[data-state="tomorrow"] .ring-progress { opacity: .45; }
+
+/* Пара идёт или нет данных — нейтрально: остаётся только серая дорожка */
+.hero[data-state="started"] .ring-progress,
+.hero[data-state="no-data"] .ring-progress { opacity: 0; }
+
+/* Текст в центре кольца */
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ring-caption {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--label-2);
+}
+.ring-time {
+  font-size: 54px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;   /* цифры одной ширины — время не "прыгает" */
+  line-height: 1.05;
+}
+/* "мин" рядом с крупным числом */
+.ring-unit { margin-left: 4px; font-size: 22px; font-weight: 600; letter-spacing: 0; }
+.ring-sub {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-title {
+  margin: 18px 0 2px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.hero-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: var(--label-2);
+}
+
+.hero-hint { display: block; margin: 12px auto 0; font-size: 13px; }
+
+/* Три цифры под кольцом: Пара · В пути · Запас */
+.hero-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--separator);
+}
+.fact + .fact { border-left: 0.5px solid var(--separator); }
+.fact dt { font-size: 12px; color: var(--label-2); }
+.fact dd { margin: 2px 0 0; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Полоска "сколько прошло" — пока идёт пара или перерыв */
+.hero-progress { width: 100%; margin-top: 16px; }
+.hero-bar { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.hero-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--blue);
+  transition: width 1.2s cubic-bezier(.22,.8,.3,1);
+}
+.hero-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 5½. Карточки под кольцом: пара, перерыв, «Дальше сегодня» ---------- */
+.card-title {
+  margin: 24px 16px 8px;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--label-2);
+}
+.lesson-card { padding: 14px 16px; }
+.lesson-card-row { display: flex; gap: 12px; }
+.lesson-card-time {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-card-time span + span { font-size: 13px; font-weight: 400; color: var(--label-2); }
+.lesson-card-bar { flex: none; width: 3px; border-radius: 2px; background: var(--blue); }
+.lesson-card-body { flex: 1; min-width: 0; }
+.lesson-card-subject { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.lesson-card-meta { margin-top: 3px; font-size: 13px; color: var(--label-2); }
+.lesson-card-place { display: flex; align-items: flex-start; gap: 4px; }
+.lesson-card-place svg { flex: none; width: 14px; height: 14px; margin-top: 1px; }
+
+.break-card { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+.break-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.break-len { font-size: 17px; font-weight: 600; }
+.break-time { font-size: 15px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+
+/* "Переход в другой корпус" — оранжевая плашка; мало времени — красная */
+.move-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+  color: var(--orange-text);
+}
+.move-note svg { flex: none; width: 18px; height: 18px; }
+.move-note b { display: block; font-size: 15px; }
+.move-note span { font-size: 13px; }
+.move-note.is-tight { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); }
+
+.later-card { overflow: hidden; }
+.later-row { display: flex; gap: 12px; padding: 12px 16px; }
+.later-subject { font-size: 15px; font-weight: 600; line-height: 1.25; }
+.later-card .break-row, .later-card .move-row { margin-left: 16px; margin-right: 16px; }
+.later-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-top: 0.5px solid var(--separator);
+  font-size: 13px;
+  color: var(--label-2);
+}
+.link-button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Строка перерыва между парами (главный экран и «Расписание») */
+.break-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.break-row svg { flex: none; width: 14px; height: 14px; }
+.break-row.is-short { color: var(--label-2); padding: 2px 0; }
+.break-row.is-short::before,
+.break-row.is-short::after { content: ""; flex: 1; border-top: 1px dashed var(--separator); }
+.break-row.is-plain { padding: 7px 12px; border-radius: 10px; background: var(--fill); color: var(--label-2); font-weight: 500; }
+.break-row.is-big { padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange-text); font-weight: 600; }
+.break-row.is-window { padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--teal) 16%, transparent); color: var(--label); font-weight: 600; }
+.move-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange-text);
+}
+.move-row svg { flex: none; width: 16px; height: 16px; }
+.move-row.is-tight { color: var(--red-text); }
+
+/* Состояние "пора выходить!" — красный заголовок и лёгкая пульсация кольца */
+.hero[data-state="leave-now"] .hero-title { color: var(--red); font-weight: 700; }
+.hero[data-state="leave-now"] .ring-sub   { color: var(--red); font-weight: 600; }
+.hero[data-state="leave-now"] .ring       { animation: pulse 1.8s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(255,69,58,0)); }
+  50%      { transform: scale(1.03); filter: drop-shadow(0 0 18px rgba(255,69,58,.45)); }
+}
+
+/* Если человек отключил анимации в системе — уважаем это */
+@media (prefers-reduced-motion: reduce) {
+  .hero[data-state="leave-now"] .ring,
+  .view { animation: none; }
+  .ring-progress, .segmented-thumb { transition: none; }
+}
+
+/* ---------- 6. Сегмент-контрол погоды ---------- */
+.segmented {
+  position: relative;
+  display: grid;
+  /* Число колонок задаётся переменной --count (погода — 5, источник расписания — 2) */
+  grid-template-columns: repeat(var(--count, 5), 1fr);
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+
+/* Белая плашка: ширина = одна колонка, сдвиг задаёт app.js через --index */
+.segmented-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--count, 5));
+  border-radius: 11px;
+  background: var(--thumb);
+  box-shadow: var(--shadow-thumb);
+  transform: translateX(calc(var(--index, 0) * 100%));
+  transition: transform .35s cubic-bezier(.3,.9,.3,1);
+}
+
+.segment {
+  position: relative;                   /* поверх плашки */
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 7px;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color .2s;
+}
+.segment-emoji { font-size: 20px; line-height: 1; }
+.segment-icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+#source-control .segment { font-size: 14px; padding: 9px 0; }
+.segment[aria-checked="true"] { color: var(--label); font-weight: 600; }
+
+/* ---------- 7. Карточка маршрута и степпер ---------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.route-card { padding: 22px 16px 16px; }
+
+/* "До корпуса: Ленина, 57" над степпером */
+.route-dest {
+  margin: -6px 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-2);
+}
+
+.stepper {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0 0 26px;                    /* место под подписи узлов */
+  list-style: none;
+}
+
+/* Узел — кружок с иконкой */
+.step {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 16px;
+  /* Полупрозрачная заливка цветом узла: color-mix смешивает цвет с прозрачностью */
+  background: color-mix(in srgb, var(--tint) 18%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tint) 35%, transparent);
+}
+/* Подпись под узлом */
+.step-label {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label-2);
+  white-space: nowrap;
+}
+
+/* Соединительная линия между узлами, над ней — минуты участка */
+.link {
+  flex: 1;
+  position: relative;
+  height: 34px;
+}
+.link::before {                          /* сама тонкая линия */
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--separator);
+}
+.link-minutes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;                  /* "25 мин" всегда в одну строку */
+  margin: 0 -6px;                       /* чуть шире связи — подпись может заходить на края кружков */
+}
+
+.route-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--separator);
+}
+.route-total-label {
+  font-size: 13px;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+.route-total-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- 8. Настройки: inset grouped list как в «Настройках» iOS ---------- */
+.group-header {
+  margin: 28px 20px 7px;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;            /* заголовки секций КАПСОМ */
+  letter-spacing: .01em;
+  color: var(--label-2);
+}
+.group-footer {
+  margin: 7px 20px 0;
+  font-size: 13px;
+  color: var(--label-2);
+  white-space: pre-line;                /* "\n" в тексте — перенос строки */
+}
+
+.group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border-radius: var(--radius-group);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;                     /* скругление обрезает содержимое строк */
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 16px;
+}
+/* Разделитель — тонкая линия, начинается после иконки (как в iOS), у последней строки его нет */
+.row + .row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 58px;
+  height: 0.5px;
+  background: var(--separator);
+}
+.row.no-icon + .row.no-icon::before { left: 16px; }
+
+/* Цветной квадратик с иконкой слева */
+.row-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--tint);
+}
+
+.row-label { flex: 1; }
+
+/* Значение справа: поле ввода + единица измерения */
+.row-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--label-2);
+  font-size: 17px;
+}
+.row-value input {
+  width: 3.2ch;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-variant-numeric: tabular-nums;   /* моноширинные цифры */
+  text-align: right;
+  outline: none;
+  -moz-appearance: textfield;           /* убираем стрелки у type=number */
+}
+.row-value input::-webkit-outer-spin-button,
+.row-value input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.row-value input:focus { color: var(--blue); }
+
+/* Поле времени в строке дня */
+.time-input {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--label);
+  font: inherit;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  min-width: 76px;
+  text-align: center;
+}
+.time-input:disabled { opacity: .35; }
+.day-off { color: var(--label-3); font-size: 15px; }
+
+/* Переключатель iOS (зелёный тумблер) на основе обычного чекбокса */
+.switch {
+  flex: none;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 16px;
+  background: var(--fill);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background .25s;
+}
+.switch::after {                         /* белый кружок */
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.08);
+  transition: transform .25s cubic-bezier(.3,.9,.3,1);
+}
+.switch:checked { background: var(--green); }
+.switch:checked::after { transform: translateX(20px); }
+
+/* Выпадающий список в строке (институт, курс, группа): выглядит как серое значение справа,
+   но растянут на всю строку — открывается от касания в любом месте строки, как в настройках iPhone
+   (раньше срабатывал только тап точно по тексту справа, и казалось, что выбор "не нажимается") */
+.row-select {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 0 34px 0 38%;               /* слева — место под подпись строки, справа — под стрелку "›" */
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  text-align: right;
+  text-align-last: right;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.row-select option { color: initial; }   /* пункты списка — обычным цветом */
+.row-select:disabled { opacity: .5; }
+/* Стрелочка "›" справа, как у строк в настройках iOS */
+.row:has(.row-select)::after {
+  content: "›";
+  position: absolute;
+  right: 16px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--label-3);
+  pointer-events: none;
+}
+
+/* Строка-кнопка ("Обновить расписание") — синим текстом во всю ширину */
+.row-button {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.row-button:disabled { color: var(--label-3); cursor: default; }
+
+/* Название предмета может быть длинным — переносим, а не обрезаем */
+.row-label.wrap { font-size: 15px; line-height: 1.25; padding: 4px 0; }
+
+/* Метка "фак." у факультатива */
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* Недавние группы: название и направление в две строки */
+.row-sub { display: block; font-size: 12px; color: var(--label-2); }
+.row.is-current .row-check { color: var(--blue); }
+.row-check { color: transparent; font-weight: 600; }
+.row.clickable { cursor: pointer; }
+
+/* Маленькие поля минут в строке корпуса */
+.mini {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+}
+.mini input {
+  width: 3ch;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--fill);
+  color: var(--label);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.mini input::-webkit-outer-spin-button,
+.mini input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mini input::placeholder { color: var(--label-3); }
+
+.empty-row { color: var(--label-2); font-size: 15px; }
+
+/* Текстовое поле в строке (адрес сервера, токен) — справа, серым, как значения в настройках iOS */
+.row-text {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  text-align: right;
+  outline: none;
+}
+.row-text:focus { color: var(--label); }
+.row-text::placeholder { color: var(--label-3); }
+
+/* Поле для вставки расписания */
+.paste-box {
+  flex: 1;
+  margin: 4px 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--label);
+  font: inherit;
+  font-size: 15px;
+  resize: none;
+}
+.paste-box::placeholder { color: var(--label-2); }
+a.row-button { text-decoration: none; }
+.group-footer.is-ok { color: var(--green); }
+.group-footer.is-error { color: var(--red); }
+
+/* ---------- 7½. Карточка «Как доехать» ---------- */
+
+.trip-card { padding: 18px 16px 14px; }
+.trip-hint { margin: 0 0 12px; color: var(--label-2); font-size: 15px; }
+.trip-hint.is-error { color: var(--red); }
+.trip-late {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--label);
+  font-size: 14px;
+}
+.trip-head { display: flex; flex-direction: column; margin-bottom: 10px; }
+.trip-leave { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.trip-arrive { font-size: 14px; color: var(--label-2); }
+
+.trip-routes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.trip-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--label);
+  font-size: 14px;
+  font-weight: 700;
+}
+.trip-route svg { width: 15px; height: 15px; }
+
+.trip-approx { color: var(--orange-text); }
+
+/* Все остановки участка: раскрывающийся список */
+.trip-via { margin-top: 4px; font-size: 13px; }
+.trip-via summary { color: var(--blue); font-weight: 600; cursor: pointer; list-style: none; }
+.trip-via summary::-webkit-details-marker { display: none; }
+.trip-via summary::after { content: " ▸"; }
+.trip-via[open] summary::after { content: " ▾"; }
+.trip-via ol { margin: 6px 0 0; padding: 0 0 0 12px; list-style: none; border-left: 2px solid var(--separator); }
+.trip-via li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0 3px 8px; color: var(--label-2); }
+.trip-via li.is-end { color: var(--label); font-weight: 600; }
+.trip-via-time { flex: none; font-variant-numeric: tabular-nums; }
+
+.trip-steps { margin: 4px 0 6px; padding: 0; list-style: none; }
+.trip-step {
+  --tint: var(--label-2);
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.3;
+}
+.trip-step.is-bus,
+.trip-step.is-trolleybus { --tint: var(--blue); }       /* в транспорте — одна синяя линия */
+.trip-step.is-arrive     { padding-bottom: 0; }
+/* Линия от шага к следующему: пешком — пунктир, транспорт — сплошная цветная */
+.trip-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: 2px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--tint);
+}
+.trip-step.is-walk:not(:last-child)::before,
+.trip-step.is-swap:not(:last-child)::before {
+  width: 0;
+  left: 14px;
+  background: none;
+  border-left: 3px dotted var(--separator);
+}
+.trip-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tint) 16%, transparent);
+  color: var(--tint);
+}
+.trip-icon svg { width: 16px; height: 16px; }
+/* Прибытие — колечко вместо значка */
+.trip-step.is-arrive .trip-icon { background: none; box-shadow: inset 0 0 0 3px var(--tint); transform: scale(.7); }
+.trip-sub { display: block; font-size: 12px; color: var(--label-2); }
+.trip-alt-title { margin: 10px 0 2px; font-size: 13px; font-weight: 600; color: var(--label-2); text-transform: uppercase; letter-spacing: .02em; }
+.trip-alt { margin: 2px 0; font-size: 14px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+.trip-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.trip-actions .chip { margin: 0; }
+.chip-quiet { background: var(--fill); color: var(--label-2); }
+.trip-note { margin: 10px 0 0; font-size: 12px; color: var(--label-2); }
+
+/* ---------- 8½. Вкладка «Расписание» ---------- */
+
+/* Название и звёздочка «В избранное» */
+.browse-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.browse-title-row h1 { min-width: 0; }
+.fav-button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--label-3);
+  cursor: pointer;
+}
+.fav-button svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.fav-button[aria-pressed="true"] { color: var(--orange); }
+.fav-button[aria-pressed="true"] svg { fill: currentColor; }
+
+/* Строка избранного: прокручивается вбок, если не помещается */
+.fav-row {
+  display: flex;
+  gap: 8px;
+  margin: 2px -16px 6px;
+  padding: 4px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.fav-row::-webkit-scrollbar { display: none; }
+.fav-chip {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--label);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fav-chip-kind { font-size: 11px; font-weight: 500; color: var(--label-2); }
+.fav-chip.is-active { box-shadow: inset 0 0 0 1.5px var(--blue); }
+
+.browse-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--label-2);
+  white-space: pre-line;
+  /* Направление подготовки бывает очень длинным — не больше трёх строк */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Строка поиска как в iOS: серая капсула с лупой */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0 10px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--label-2);
+}
+.search svg { width: 18px; height: 18px; flex: none; }
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--label);
+  font: inherit;
+  outline: none;
+  -webkit-appearance: none;
+}
+.search input::placeholder { color: var(--label-2); }
+.search input:disabled::placeholder { color: var(--label-3); }
+
+/* Переключатель недель: стрелки и подпись посередине */
+.week-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 6px;
+}
+.week-arrow {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--blue);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.week-arrow:disabled { color: var(--label-3); box-shadow: none; background: var(--fill); cursor: default; }
+.week-label { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.week-range { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.week-kind { font-size: 13px; color: var(--label-2); }
+
+.browse-chips { display: flex; justify-content: center; gap: 8px; min-height: 8px; }
+.chip {
+  margin: 4px 0 10px;
+  min-height: 36px;                     /* удобно попадать пальцем (вместе с отступами — около 44 pt) */
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Карточка дня */
+.day-card {
+  margin: 12px 0;
+  padding: 14px 16px 6px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.day-card.is-past { opacity: .55; }                           /* прошедшие дни — приглушённо */
+.day-card.is-today { box-shadow: var(--shadow-card), inset 0 0 0 2px color-mix(in srgb, var(--blue) 55%, transparent); }
+.day-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+}
+/* "3 пары · 10:45–16:20" справа от названия дня */
+.day-summary { font-size: 13px; font-weight: 500; color: var(--label-2); font-variant-numeric: tabular-nums; }
+
+.badge-today { background: color-mix(in srgb, var(--blue) 16%, transparent); color: var(--blue); }
+.badge-sub { background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green); }   /* пара подгруппы */
+
+/* Переключатель подгрупп «Все · 1 п/г · 2 п/г» над днями недели */
+.browse-subgroups { margin: 0 0 12px; }
+.browse-subgroups .segment { padding: 9px 0; font-size: 14px; font-weight: 500; }
+
+.lessons { margin: 0; padding: 0; list-style: none; }
+.lesson {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+}
+.lesson + .lesson { border-top: 0.5px solid var(--separator); }
+.lesson-none { color: var(--label-2); font-size: 15px; }
+.lesson-time {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 46px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-time span + span { font-weight: 400; color: var(--label-2); font-size: 13px; }
+.lesson-body { flex: 1; min-width: 0; }
+.lesson-subject { font-size: 16px; font-weight: 600; line-height: 1.25; }
+.lesson-meta { margin-top: 2px; font-size: 13px; color: var(--label-2); }
+.lesson.is-excluded .lesson-subject,
+.lesson.is-excluded .lesson-time { color: var(--label-3); }
+
+.browse-empty { margin: 24px 4px; text-align: center; color: var(--label-2); }
+
+/* ---------- 9. Нижний таб-бар ---------- */
+/* ---------- Окно "Добавь на экран «Домой»" (bottom sheet как в iOS) ---------- */
+.install-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;                                  /* поверх таб-бара */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.install-sheet[hidden] { display: none; }
+.install-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  animation: install-fade .25s ease-out;
+}
+.install-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 20px calc(env(safe-area-inset-bottom) + 16px);
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+  color: var(--label);
+  text-align: center;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.18);
+  animation: install-up .35s cubic-bezier(.3,.9,.3,1);
+}
+.install-grabber {
+  display: block;
+  width: 36px;
+  height: 5px;
+  margin: 0 auto 14px;
+  border-radius: 3px;
+  background: var(--label-3);
+}
+.install-icon { display: block; margin: 0 auto 10px; border-radius: 15px; }
+.install-title { margin: 0 0 12px; font-size: 20px; font-weight: 700; line-height: 1.2; }
+.install-perks {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  color: var(--label-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.install-steps {
+  margin: 0 0 16px;
+  padding: 12px 14px 12px 34px;
+  border-radius: 14px;
+  background: var(--fill);
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.install-steps li + li { margin-top: 6px; }
+.install-glyph { width: 20px; height: 20px; vertical-align: -4px; color: var(--blue); }
+.install-primary, .install-later {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.install-primary { margin-bottom: 6px; background: var(--blue); color: #fff; }
+.install-later { background: none; color: var(--blue); }
+@keyframes install-up { from { transform: translateY(100%); } }
+@keyframes install-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .install-card, .install-backdrop { animation: none; }
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0;                               /* четыре вкладки должны помещаться и на узком экране */
+  padding: 7px 16px calc(env(safe-area-inset-bottom) + 7px);
+  /* "Матовое стекло" как в iOS: полупрозрачный фон + размытие того, что под ним */
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--separator);
+}
+.tab {
+  flex: 1;
+  max-width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 2px 8px;
+  border: 0;
+  background: none;
+  color: var(--label-3);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tab svg { width: 26px; height: 26px; }
+.tab.is-active { color: var(--blue); }
+
+
+/* ---------- 10. Экран «Главная» ---------- */
+#view-home { position: relative; }
+
+/* Сейчас */
+.now-card {
+  margin-top: 14px;
+  padding: 20px 20px 18px;
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.now-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--label-2);
+}
+.now-card[data-state="class"] .now-label { color: var(--green-text); }
+.now-card[data-state="break"] .now-label { color: var(--blue); }
+.now-subject {
+  margin: 6px 0 0;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.now-facts { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.now-facts li { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; line-height: 1.3; }
+.now-facts li svg { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--label-2); }
+.now-facts .now-type { color: var(--label-2); font-size: 14px; }
+.now-timer {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--separator);
+}
+.now-left { flex: none; display: flex; align-items: baseline; gap: 3px; }
+.now-number { font-size: 46px; line-height: 1; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.now-unit { font-size: 20px; font-weight: 600; }
+.now-left-label { font-size: 14px; color: var(--label-2); line-height: 1.25; }
+.now-progress { margin-top: 12px; }
+.now-bar { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.now-bar span { display: block; height: 100%; border-radius: 3px; background: var(--blue); transition: width 1.2s cubic-bezier(.22,.8,.3,1); }
+.now-card[data-state="class"] .now-bar span { background: var(--green); }
+.now-bar-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+
+/* Следующая пара — матовое стекло */
+.next-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: var(--fill);                /* светло-серая, полупрозрачная */
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+.next-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.next-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--label-2); }
+.next-when { font-size: 13px; font-weight: 600; color: var(--blue); font-variant-numeric: tabular-nums; }
+.next-body { display: flex; gap: 12px; }
+.next-subject { font-size: 17px; font-weight: 600; line-height: 1.25; }
+
+/* Пары дня: идущая выделена, прошедшие бледные */
+.later-row.is-past { opacity: .45; }
+.badge-now { background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green-text); }
+
+/* Ссылка на «Дорогу» */
+.road-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border: 0;
+  color: var(--label);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.road-link-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+}
+.road-link-icon svg { width: 20px; height: 20px; }
+.road-link-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.road-link-text b { font-size: 16px; }
+.road-link-text span { font-size: 13px; color: var(--label-2); }
+.road-link-arrow { font-size: 24px; color: var(--label-3); }
+.road-link.is-urgent .road-link-icon { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
+.road-link.is-urgent b { color: var(--red); }
