@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Проверка</title>
+  <!-- Диагностика: открывается даже при плохой связи (всё внутри одного маленького файла)
+       и по очереди загружает файлы приложения, показывая, какой из них не доходит. -->
+  <style>
+    body { margin: 0; padding: 16px; background: #F2F2F7; color: #000; font: 15px -apple-system, system-ui, sans-serif; }
+    h1 { font-size: 22px; margin: 8px 0 12px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; }
+    td { padding: 8px 10px; border-top: 1px solid #e5e5ea; font-variant-numeric: tabular-nums; }
+    .ok { color: #1a9e3f; } .bad { color: #d70015; } .wait { color: #8e8e93; }
+    button { margin-top: 12px; padding: 12px 16px; width: 100%; border: 0; border-radius: 12px; background: #0A84FF; color: #fff; font: inherit; font-weight: 600; }
+    pre { white-space: pre-wrap; font-size: 12px; color: #3c3c43; }
+  </style>
+</head>
+<body>
+  <h1>Проверка «Дороги до универа»</h1>
+  <table id="t"></table>
+  <button id="reset">Сбросить кэш приложения</button>
+  <pre id="info"></pre>
+  <script>
+    var files = ['index.html', 'style.css', 'mau.js', 'data.js', 'app.js', 'sw.js', 'manifest.json',
+                 'icons/apple-touch-icon.png', 'data/meta.json', 'data/catalog.json'];
+    var table = document.getElementById('t');
+
+    // Загружаем файлы по одному, с ограничением 15 секунд на каждый
+    async function run() {
+      for (var i = 0; i < files.length; i++) {
+        var row = table.insertRow();
+        row.insertCell().textContent = files[i];
+        var cell = row.insertCell();
+        cell.textContent = 'загрузка…';
+        cell.className = 'wait';
+        var start = Date.now();
+        var ctrl = new AbortController();
+        var timer = setTimeout(function () { ctrl.abort(); }, 15000);
+        try {
+          var r = await fetch(files[i] + '?check=' + start, { cache: 'no-store', signal: ctrl.signal });
+          var size = (await r.arrayBuffer()).byteLength;
+          cell.textContent = r.status + ' · ' + (size / 1024).toFixed(1) + ' КБ · ' + (Date.now() - start) + ' мс';
+          cell.className = r.ok ? 'ok' : 'bad';
+        } catch (e) {
+          cell.textContent = (e.name === 'AbortError' ? 'зависло (15 с)' : 'ошибка: ' + e.message);
+          cell.className = 'bad';
+        }
+        clearTimeout(timer);
+      }
+    }
+
+    // Сведения об устройстве и service worker
+    async function info() {
+      var lines = [
+        'Режим: ' + (navigator.standalone ? 'приложение с экрана «Домой»' : 'браузер'),
+        'Онлайн: ' + navigator.onLine,
+        'Браузер: ' + navigator.userAgent
+      ];
+      if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        lines.push('Service worker: ' + (regs.length ? regs.map(function (r) { return r.active ? r.active.state : 'не активен'; }).join(', ') : 'нет'));
+      }
+      if (window.caches) lines.push('Кэши: ' + ((await caches.keys()).join(', ') || 'нет'));
+      document.getElementById('info').textContent = lines.join('\n');
+    }
+
+    // Сброс: удалить service worker и все кэши — приложение загрузится заново с сайта
+    document.getElementById('reset').onclick = async function () {
+      if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        for (var i = 0; i < regs.length; i++) await regs[i].unregister();
+      }
+      if (window.caches) {
+        var keys = await caches.keys();
+        for (var j = 0; j < keys.length; j++) await caches.delete(keys[j]);
+      }
+      this.textContent = 'Готово — кэш сброшен';
+      info();
+    };
+
+    info();
+    run();
+  </script>
+</body>
+</html>
